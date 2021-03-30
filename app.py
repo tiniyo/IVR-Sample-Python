@@ -5,6 +5,7 @@ from flask import (
 )
 from tiniyo.voice_response import VoiceResponse
 from helper import tiniyoml
+from config import *
 
 app = Flask(__name__)
 
@@ -22,7 +23,13 @@ def welcome():
 
 @app.route('/ivr/welcomeCB', methods=['POST'])
 def welcomeCB():
-    selected_option = request.form['Digits']
+    app.logger.error("DTMFGathertime response = %s" % request.get_json())
+    digit = None
+    if request.get_json() is not None:
+        if 'Digits' in request.get_json():
+            selected_option = request.json.get('Digits')
+    #selected_option = request.form['Digits']
+    app.logger.error("welcomeCB digit received = %s" % selected_option)
     option_actions = {'1': "tablebooking",
                       '2': "loyalitypoint",
                       '3': "otherquery"}
@@ -40,16 +47,10 @@ def welcomeCB():
     else:
         return _redirect_welcome()
 
-
-def _loyality_point(response):
-    response.say("To get to _loyality_point, please visit our website",voice="alice", language="en-GB")
-    response.hangup()
-    return response
-
-
-def _tablereservation(response):
+def _tablereservation():
+    response = VoiceResponse()
     with response.gather(
-        numDigits=1, action=url_for('/ivr/reservation_day'), method="POST"
+        numDigits=1, action=url_for('reservation_day',_scheme='http',_external=True), method="POST"
     ) as g:
         g.say("Press 1 for today " +
               "Press 2 for tomorrow " +
@@ -59,28 +60,41 @@ def _tablereservation(response):
 
     return response
 
-def _tableservationtime_today(response):
+
+def _loyality_point():
+    response = VoiceResponse()
+    response.say("To get to _loyality_point, please visit our website",voice="alice", language="en-GB")
+    response.hangup()
+    return response
+
+
+def _tableservationtime_today():
+    response = VoiceResponse()
     with response.gather(
-        numDigits=1, action=url_for('/ivr/tableservationtimetoday'), method="POST"
+        numDigits=1, action=url_for('tableservationtimetoday',_scheme='http',_external=True), method="POST"
     ) as g:
         g.say("Press 1 for breakfast, press 2 for lunch, press 3 for dinner" ,voice="alice", language="en-GB", loop=3)
     return response
 
-def _tableservationtime_tomorrow(response):
+def _tableservationtime_tomorrow():
+    response = VoiceResponse()
     with response.gather(
-        numDigits=1, action=url_for('/ivr/tableservationtimetomorrow'), method="POST"
+        numDigits=1, action=url_for('tableservationtimetomorrow',_scheme='http',_external=True), method="POST"
     ) as g:
         g.say("Press 1 for breakfast, press 2 for lunch, press 3 for dinner" ,voice="alice", language="en-GB", loop=3)
     return response
 
 
-def _forotherquery(response):
-    response.dial('xxxxxxxxx',timeout=30,ring_tone='https://tiniyo.s3-ap-southeast-1.amazonaws.com/public/KolkataMixtapeWelcome.mp3',action=url_for('/forotherqueryCB'))
+def _forotherquery():
+    response = VoiceResponse()
+    response.dial(reception_number,timeout=30,ring_tone='https://tiniyo.s3-ap-southeast-1.amazonaws.com/public/KolkataMixtapeWelcome.mp3')
+    response.dial(manager_number, timeout=30,ring_tone='https://tiniyo.s3-ap-southeast-1.amazonaws.com/public/KolkataMixtapeWelcome.mp3')
+    response.dial(owner_number, timeout=30,ring_tone='https://tiniyo.s3-ap-southeast-1.amazonaws.com/public/KolkataMixtapeWelcome.mp3')
     return tiniyoml(response)
 
 
 @app.route('/ivr/tableservationtimetomorrow', methods=['POST'])
-def reservation_time_tomorrow():
+def tableservationtimetomorrow():
     selected_option = request.form['Digits']
     option_actions = {'1': "breakfast",
                       '2': "lunch",
@@ -88,26 +102,21 @@ def reservation_time_tomorrow():
 
     if selected_option in option_actions:
         if int(selected_option) == 1:
-            response = reservation_time_today()
+            response = _tableservationtime_today()
             return tiniyoml(response)
         elif int(selected_option) == 2:
-            response = reservation_time_tomorrow()
+            response = _tableservationtime_tomorrow()
             return tiniyoml(response)
 
 @app.route('/ivr/tableservationtimetoday', methods=['POST'])
-def reservation_time_today():
+def tableservationtimetoday():
     selected_option = request.form['Digits']
     option_actions = {'1': "breakfast",
                       '2': "lunch",
                       '3': "dinner"}
-
-    if selected_option in option_actions:
-        if int(selected_option) == 1:
-            response=reservation_time_today()
-            return tiniyoml(response)
-        elif int(selected_option) == 2:
-            response=reservation_time_tomorrow()
-            return tiniyoml(response)
+    print("Table is booked for today for %s" % option_actions[selected_option])
+    ###SEND SMS https://github.com/tiniyo/tiniyo-python
+    return _redirect_confirmation()
 
 @app.route('/ivr/reservation_day', methods=['POST'])
 def reservation_day():
@@ -118,20 +127,27 @@ def reservation_day():
 
     if selected_option in option_actions:
         if int(selected_option) == 1:
-            response = reservation_time_today()
+            response = _tableservationtime_today()
             return tiniyoml(response)
         elif int(selected_option) == 2:
-            response = reservation_time_tomorrow()
+            response = _tableservationtime_tomorrow()
             return tiniyoml(response)
 
     return _redirect_welcome()
 
 def _redirect_welcome():
     response = VoiceResponse()
-    response.say("Returning to the main menu", voice="alice", language="en-GB")
-    response.redirect(url_for('welcome'))
+    response.say("No Digit received. Returning to the main menu", voice="alice", language="en-GB")
+    response.redirect(url_for('welcome',_scheme='http',_external=True) )
 
     return tiniyoml(response)
+
+def _redirect_confirmation():
+    response = VoiceResponse()
+    response.say("Your reservation is successfully booked. You will received sms shortly", voice="alice", language="en-GB")
+    response.say("Good Bye", voice="alice", language="en-GB")
+    return tiniyoml(response)
+
 
 if __name__ == '__main__':
     app.run()
