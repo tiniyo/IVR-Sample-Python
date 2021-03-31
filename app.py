@@ -90,12 +90,19 @@ def _forotherquery():
     response.dial(reception_number,timeout=30,ring_tone='https://tiniyo.s3-ap-southeast-1.amazonaws.com/public/KolkataMixtapeWelcome.mp3')
     response.dial(manager_number, timeout=30,ring_tone='https://tiniyo.s3-ap-southeast-1.amazonaws.com/public/KolkataMixtapeWelcome.mp3')
     response.dial(owner_number, timeout=30,ring_tone='https://tiniyo.s3-ap-southeast-1.amazonaws.com/public/KolkataMixtapeWelcome.mp3')
-    return tiniyoml(response)
+    return response
 
 
 @app.route('/ivr/tableservationtimetomorrow', methods=['POST'])
 def tableservationtimetomorrow():
-    selected_option = request.form['Digits']
+    #selected_option = request.form['Digits']
+    app.logger.error("tableservationtimetomorrow response = %s" % request.get_json())
+    digit = None
+    if request.get_json() is not None:
+        if 'Digits' in request.get_json():
+            selected_option = request.json.get('Digits')
+    # selected_option = request.form['Digits']
+    app.logger.error("tableservationtimetomorrow digit received = %s" % selected_option)
     option_actions = {'1': "breakfast",
                       '2': "lunch",
                       '3': "dinner"}
@@ -110,7 +117,13 @@ def tableservationtimetomorrow():
 
 @app.route('/ivr/tableservationtimetoday', methods=['POST'])
 def tableservationtimetoday():
-    selected_option = request.form['Digits']
+    app.logger.error("tableservationtimetoday response = %s" % request.get_json())
+    digit = None
+    if request.get_json() is not None:
+        if 'Digits' in request.get_json():
+            selected_option = request.json.get('Digits')
+    # selected_option = request.form['Digits']
+    app.logger.error("tableservationtimetoday digit received = %s" % selected_option)
     option_actions = {'1': "breakfast",
                       '2': "lunch",
                       '3': "dinner"}
@@ -120,7 +133,13 @@ def tableservationtimetoday():
 
 @app.route('/ivr/reservation_day', methods=['POST'])
 def reservation_day():
-    selected_option = request.form['Digits']
+    app.logger.error("reservation_day response = %s" % request.get_json())
+    digit = None
+    if request.get_json() is not None:
+        if 'Digits' in request.get_json():
+            selected_option = request.json.get('Digits')
+    # selected_option = request.form['Digits']
+    app.logger.error("reservation_day digit received = %s" % selected_option)
     option_actions = {'1': "today",
                       '2': "tomorrow",
                       '*': "welcome"}
