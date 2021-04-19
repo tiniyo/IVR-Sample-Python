@@ -106,7 +106,7 @@ def receptionCB():
 @app.route('/ivr/managerCB', methods=['GET','POST'])
 def managerCB():
     response = VoiceResponse()
-    response.dial(owner_number, timeout=30,action=url_for('managerCB',_scheme='http',_external=True), method="POST")
+    response.dial(owner_number, timeout=30,action=url_for('ownerCB',_scheme='http',_external=True), method="POST")
     return response
 
 @app.route('/ivr/ownerCB', methods=['GET','POST'])
