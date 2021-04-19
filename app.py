@@ -63,7 +63,13 @@ def _tablereservation():
 
 def _loyality_point():
     response = VoiceResponse()
-    response.say("To get to _loyality_point, please visit our website",voice="alice", language="en-GB")
+    my_headers = {'x-api-key' : x_api_key,'Content-Type':'application/json','Accept':'Accept'}
+    custresp = requests.get(customer_check_url,headers=my_headers)
+    if (response.status_code == 200):
+        response.say("Your loyality points are "+response.json().response.details.currentpoints,voice="alice", language="en-GB")
+        # Code here will only run if the request is successful
+    else:
+        response.say("To get to _loyality_point, please visit our website",voice="alice", language="en-GB")
     response.hangup()
     return response
 
