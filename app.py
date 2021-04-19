@@ -87,10 +87,36 @@ def _tableservationtime_tomorrow():
 
 def _forotherquery():
     response = VoiceResponse()
-    response.dial(reception_number,timeout=30,ring_tone='https://tiniyo.s3-ap-southeast-1.amazonaws.com/public/KolkataMixtapeWelcome.mp3')
-    response.dial(manager_number, timeout=30,ring_tone='https://tiniyo.s3-ap-southeast-1.amazonaws.com/public/KolkataMixtapeWelcome.mp3')
-    response.dial(owner_number, timeout=30,ring_tone='https://tiniyo.s3-ap-southeast-1.amazonaws.com/public/KolkataMixtapeWelcome.mp3')
+    response.dial(reception_number,timeout=30,action=url_for('receptionCB',_scheme='http',_external=True), method="POST")
     return response
+
+@app.route('/ivr/receptionCB', methods=['GET','POST'])
+def receptionCB():
+    response = VoiceResponse()
+    response.dial(manager_number, timeout=30,action=url_for('managerCB',_scheme='http',_external=True), method="POST")
+    return response
+
+@app.route('/ivr/managerCB', methods=['GET','POST'])
+def managerCB():
+    response = VoiceResponse()
+    response.dial(owner_number, timeout=30,action=url_for('managerCB',_scheme='http',_external=True), method="POST")
+    return response
+
+@app.route('/ivr/ownerCB', methods=['GET','POST'])
+def ownerCB():
+    client = Client(auth_id, auth_secret)
+    # Send SMS to owner and manager. 
+    message = client.messages.create(
+                              body='Missed Call for the customer ' + request.form.get('From'),
+                              from_=sender_id,
+                              to=manager_number
+                          )
+    message = client.messages.create(
+                            body='Missed Call for the customer : '+request.form.get('From'),
+                            from_=sender_id,
+                            to=owner_number
+                        )
+    return
 
 
 @app.route('/ivr/tableservationtimetomorrow', methods=['POST'])
@@ -107,13 +133,9 @@ def tableservationtimetomorrow():
                       '2': "lunch",
                       '3': "dinner"}
 
-    if selected_option in option_actions:
-        if int(selected_option) == 1:
-            response = _tableservationtime_today()
-            return tiniyoml(response)
-        elif int(selected_option) == 2:
-            response = _tableservationtime_tomorrow()
-            return tiniyoml(response)
+    print("Table is booked for tomorrow for %s" % option_actions[selected_option])
+    ###SEND SMS https://github.com/tiniyo/tiniyo-python
+    return _redirect_confirmation("Tomorrow "+option_actions[selected_option], request.form.get("From"))
 
 @app.route('/ivr/tableservationtimetoday', methods=['POST'])
 def tableservationtimetoday():
@@ -129,7 +151,8 @@ def tableservationtimetoday():
                       '3': "dinner"}
     print("Table is booked for today for %s" % option_actions[selected_option])
     ###SEND SMS https://github.com/tiniyo/tiniyo-python
-    return _redirect_confirmation()
+    return _redirect_confirmation("Today "+option_actions[selected_option], request.form.get("From"))
+
 
 @app.route('/ivr/reservation_day', methods=['POST'])
 def reservation_day():
@@ -151,8 +174,8 @@ def reservation_day():
         elif int(selected_option) == 2:
             response = _tableservationtime_tomorrow()
             return tiniyoml(response)
-
     return _redirect_welcome()
+
 
 def _redirect_welcome():
     response = VoiceResponse()
@@ -161,10 +184,18 @@ def _redirect_welcome():
 
     return tiniyoml(response)
 
-def _redirect_confirmation():
+def _redirect_confirmation(time, customer_number):
     response = VoiceResponse()
-    response.say("Your reservation is successfully booked. You will received sms shortly", voice="alice", language="en-GB")
+    response.say("Your reservation is successfully booked for "+time+". You will received sms shortly", voice="alice", language="en-GB")
     response.say("Good Bye", voice="alice", language="en-GB")
+    
+    client = Client(auth_id, auth_secret)
+    # Send SMS to customer of confirmation. 
+    message = client.messages.create(
+                              body="Your reservation is successfully booked for "+ time +".",
+                              from_=sender_id,
+                              to=customer_number
+                          )
     return tiniyoml(response)
 
 

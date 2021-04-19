@@ -6,6 +6,11 @@ reception_number = "919934576876"
 manager_number = "919934576876"
 owner_number = "919934576876"
 
+sender_id = "TINIYO"
+
+auth_id = "TINIYO_AUTH_ID"
+auth_secret = "TINIYO_AUTH_SECRET_ID"
+
 customer_key = "15657test"
 merchant_id = 15657
 
