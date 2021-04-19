@@ -64,7 +64,7 @@ def _tablereservation():
 def _loyality_point(customer_number):
     response = VoiceResponse()
     req_body = {'customer_key': customer_key, 'merchant_id': merchant_id, 'customer_mobile': customer_number}
-    my_headers = {'x-api-key' : x_api_key,'Content-Type':'application/json','Accept':'Accept'}
+    my_headers = {'x-api-key' : x_api_key,'Content-Type':'application/json','Accept':'application/json'}
     custresp = requests.get(customer_check_url,headers=my_headers,data=req_body)
     if (response.status_code == 200):
         response.say("Your loyality points are "+response.json().response.details.currentpoints,voice="alice", language="en-GB")
