@@ -39,7 +39,7 @@ def welcomeCB():
             response = _tablereservation()
             return tiniyoml(response)
         elif int(selected_option) == 2:
-            response = _loyality_point()
+            response = _loyality_point(request.json.get('From'))
             return tiniyoml(response)
         elif int(selected_option) == 3:
             response = _forotherquery()
@@ -61,10 +61,11 @@ def _tablereservation():
     return response
 
 
-def _loyality_point():
+def _loyality_point(customer_number):
     response = VoiceResponse()
+    req_body = {'customer_key': customer_key, 'merchant_id': merchant_id, 'customer_mobile': customer_number}
     my_headers = {'x-api-key' : x_api_key,'Content-Type':'application/json','Accept':'Accept'}
-    custresp = requests.get(customer_check_url,headers=my_headers)
+    custresp = requests.get(customer_check_url,headers=my_headers,data=req_body)
     if (response.status_code == 200):
         response.say("Your loyality points are "+response.json().response.details.currentpoints,voice="alice", language="en-GB")
         # Code here will only run if the request is successful
